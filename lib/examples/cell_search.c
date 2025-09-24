@@ -49,6 +49,8 @@
 int band         = -1;
 int earfcn_start = -1, earfcn_end = -1;
 
+int step = 1; // EARFCN step for scanning (>=1)
+
 cell_search_cfg_t cell_detect_config = {.max_frames_pbch      = SRSRAN_DEFAULT_MAX_FRAMES_PBCH,
                                         .max_frames_pss       = SRSRAN_DEFAULT_MAX_FRAMES_PSS,
                                         .nof_valid_pss_frames = SRSRAN_DEFAULT_NOF_VALID_PSS_FRAMES,
@@ -76,13 +78,14 @@ void usage(char* prog)
   printf("\t-s earfcn_start [Default All]\n");
   printf("\t-e earfcn_end [Default All]\n");
   printf("\t-n nof_frames_total [Default 100]\n");
+  printf("\t-i earfcn_step [Default 1]\n");
   printf("\t-v [set srsran_verbose to debug, default none]\n");
 }
 
 void parse_args(int argc, char** argv)
 {
   int opt;
-  while ((opt = getopt(argc, argv, "agsendvb")) != -1) {
+  while ((opt = getopt(argc, argv, "agsendvbi:")) != -1) {
     switch (opt) {
       case 'a':
         rf_args = argv[optind];
@@ -108,6 +111,11 @@ void parse_args(int argc, char** argv)
       case 'v':
         increase_srsran_verbose_level();
         break;
+      case 'i':
+        step = (int)strtol(optarg, NULL, 10);
+        if (step < 1) step = 1;
+        break;
+        
       default:
         usage(argv[0]);
         exit(-1);
@@ -204,7 +212,7 @@ int main(int argc, char** argv)
                              cell_detect_config.init_agc);
   }
 
-  for (freq = 0; freq < nof_freqs && !go_exit; freq++) {
+  for (freq = 0; freq < nof_freqs && !go_exit; freq+=step) {
     /* set rf_freq */
     srsran_rf_set_rx_freq(&rf, 0, (double)channels[freq].fd * MHZ);
     INFO("Set rf_freq to %.3f MHz", (double)channels[freq].fd * MHZ / 1000000);
